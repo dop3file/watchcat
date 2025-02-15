@@ -1,9 +1,7 @@
+import argparse
 import subprocess
 import time
-from datetime import datetime
-from hashlib import sha256
 from pathlib import Path
-import argparse
 
 
 class WatchCat:
@@ -11,11 +9,26 @@ class WatchCat:
         self._watch_delay = watch_delay
         self._source_dir = source_dir
         self._execution_command = execution_command
+        self._max_folder_level = max_folder_level
         self._dir_state: dict[str, float] = {}
 
-    def _get_all_file_paths(self) -> list[Path]:
-        all_paths = Path(self._source_dir).glob("*")
-        return [path for path in all_paths if path.is_file()]
+    def _get_all_file_paths(self, directory: str | Path = None, max_folder_level: int = 0) -> list[Path]:
+        all_paths = Path(directory if directory else self._source_dir).glob("*")
+
+        if max_folder_level == 0:
+            return [path for path in all_paths if path.is_file()]
+
+        elif max_folder_level > 0:
+            subfolder_paths = []
+            for path in all_paths:
+                if path.is_file():
+                    subfolder_paths.append(path)
+                elif path.is_dir():
+                    subfolder_paths.extend(self._get_all_file_paths(path, max_folder_level - 1))
+            return subfolder_paths
+
+        elif max_folder_level < 0:
+            raise ValueError("max_folder_level must be greater than 0")
 
     def _is_dir_change(self) -> bool:
         file_paths = self._get_all_file_paths()
