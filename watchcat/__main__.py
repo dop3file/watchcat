@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 class WatchCat:
-    def __init__(self, watch_delay: int, source_dir: str, execution_command: str):
+    def __init__(self, watch_delay: int, source_dir: str, execution_command: str, max_folder_level: int = 0):
         self._watch_delay = watch_delay
         self._source_dir = source_dir
         self._execution_command = execution_command
@@ -31,7 +31,7 @@ class WatchCat:
             raise ValueError("max_folder_level must be greater than 0")
 
     def _is_dir_change(self) -> bool:
-        file_paths = self._get_all_file_paths()
+        file_paths = self._get_all_file_paths(max_folder_level=self._max_folder_level)
         for file_path in file_paths:
             absolute_path = str(file_path.absolute())
             if absolute_path not in self._dir_state:
@@ -41,7 +41,7 @@ class WatchCat:
         return False
 
     def _init_dir_state(self):
-        file_paths = self._get_all_file_paths()
+        file_paths = self._get_all_file_paths(max_folder_level=self._max_folder_level)
         for file_path in file_paths:
             self._dir_state[str(file_path.absolute())] = file_path.stat().st_mtime
 
@@ -59,8 +59,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Watch cat - meow meow meow")
     parser.add_argument("--exec_command", help="Path for execution file")
     parser.add_argument("--source", help="Source for watching")
-    parser.add_argument("--watch_delay", help="Delay for re-watch files", default=10)
+    parser.add_argument("--watch_delay", help="Delay for re-watch files", default=10, type=int)
+    parser.add_argument("--max_folder_level", help="Max folder level for watching", default=0, type=int)
 
     args = parser.parse_args()
-    watch_cat = WatchCat(watch_delay=args.watch_delay, source_dir=args.source, execution_command=args.exec_command)
+    watch_cat = WatchCat(watch_delay=args.watch_delay, source_dir=args.source, execution_command=args.exec_command,
+                         max_folder_level=args.max_folder_level)
     watch_cat.watcher()
